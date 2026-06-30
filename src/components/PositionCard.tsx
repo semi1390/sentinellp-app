@@ -48,9 +48,9 @@ export function PositionCard({ index, owner, isProtected }: Props) {
     );
   }
 
-  const [, , token0, token1, fee, tickLower, tickUpper, liquidity] = position as [
-    bigint, string, string, string, number, number, number, bigint, ...unknown[]
-  ];
+const [, , token0, token1, fee, tickLower, tickUpper, liquidity] = position as unknown as [
+  bigint, string, string, string, number, number, number, bigint, ...unknown[]
+];
 
   const hasLiquidity = liquidity > 0n;
   const feeLabel = FEE_LABELS[fee] ?? `${fee / 10000}% fee tier`;

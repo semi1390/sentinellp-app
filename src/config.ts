@@ -2,7 +2,7 @@
 // SentinelLP Frontend Config
 // ============================================================
 
-import { http, createConfig } from "wagmi";
+import { http } from "wagmi";
 import { sepolia, mainnet } from "wagmi/chains";
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 

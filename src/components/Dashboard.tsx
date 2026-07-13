@@ -1,5 +1,5 @@
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   SENTINEL_OPERATOR_ADDRESS,
   POSITION_MANAGER_ADDRESS,
@@ -7,9 +7,11 @@ import {
   POSITION_MANAGER_ABI,
 } from "../config";
 import { PositionCard } from "./PositionCard";
+import { OnboardingWizard } from "./OnboardingWizard";
 
 export function Dashboard() {
   const { address } = useAccount();
+  const [wizardDismissed, setWizardDismissed] = useState(false);
 
   const { data: isRegistered, refetch: refetchRegistered } = useReadContract({
     address: SENTINEL_OPERATOR_ADDRESS,
@@ -38,38 +40,20 @@ export function Dashboard() {
     args: [address!],
   });
 
-  const { writeContract: register, data: registerHash } = useWriteContract();
-  const { isSuccess: registerSuccess } = useWaitForTransactionReceipt({ hash: registerHash });
-
-  const { writeContract: approveOperator, data: approveHash } = useWriteContract();
-  const { isSuccess: approveSuccess } = useWaitForTransactionReceipt({ hash: approveHash });
-
   const { writeContract: deregister, data: deregisterHash } = useWriteContract();
   const { isSuccess: deregisterSuccess } = useWaitForTransactionReceipt({ hash: deregisterHash });
 
   useEffect(() => {
-    if (registerSuccess || approveSuccess || deregisterSuccess) {
+    if (deregisterSuccess) {
       refetchRegistered();
       refetchApproved();
     }
-  }, [registerSuccess, approveSuccess, deregisterSuccess]);
+  }, [deregisterSuccess]);
 
-  const handleRegister = () => {
-    register({
-      address: SENTINEL_OPERATOR_ADDRESS,
-      abi: OPERATOR_ABI,
-      functionName: "register",
-    });
-  };
+  const isFullyActive = !!isRegistered && !!isApproved;
 
-  const handleApprove = () => {
-    approveOperator({
-      address: POSITION_MANAGER_ADDRESS,
-      abi: POSITION_MANAGER_ABI,
-      functionName: "setApprovalForAll",
-      args: [SENTINEL_OPERATOR_ADDRESS, true],
-    });
-  };
+  // Show wizard if not fully set up AND user hasn't dismissed it
+  const showWizard = !isFullyActive && !wizardDismissed;
 
   const handleDeregister = () => {
     deregister({
@@ -79,7 +63,27 @@ export function Dashboard() {
     });
   };
 
-  const isFullyActive = isRegistered && isApproved;
+  if (showWizard) {
+    return (
+      <div className="dashboard">
+        <div className="wizard-page-header">
+          <div>
+            <h1 className="wizard-page-title">Get Started</h1>
+            <p className="wizard-page-sub">
+              Complete setup to start protecting your Uniswap v3 positions.
+            </p>
+          </div>
+          <button
+            className="btn-wizard-skip"
+            onClick={() => setWizardDismissed(true)}
+          >
+            Skip setup →
+          </button>
+        </div>
+        <OnboardingWizard onComplete={() => setWizardDismissed(true)} />
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -87,93 +91,39 @@ export function Dashboard() {
       {/* Status Banner */}
       <div className={`status-banner ${isFullyActive ? "active" : "inactive"}`}>
         <div className="status-left">
-          <div className="status-dot">{isFullyActive ? "✅" : "⚠️"}</div>
+          <div className="status-dot">
+            {isFullyActive ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M5 13l4 4L19 7" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </div>
           <div>
             <div className="status-title">
               {isFullyActive
-                ? "Agent is actively monitoring"
-                : "Complete setup to start protecting your positions"}
+                ? "Agent is actively monitoring your positions"
+                : "Setup incomplete — complete onboarding to start protection"}
             </div>
             <div className="status-subtitle">
               {isFullyActive
-                ? "SentinelLP is keeping your positions in range and optimizing fees."
-                : "Register and approve SentinelLP to begin autonomous management."}
+                ? "SentinelLP checks every 5 minutes. You'll be notified on rebalance."
+                : "Your positions are not yet protected."}
             </div>
           </div>
         </div>
-        {isFullyActive && (
-          <a className="status-action">View Activity →</a>
+        {!isFullyActive && (
+          <button
+            className="btn-wizard-primary"
+            onClick={() => setWizardDismissed(false)}
+            style={{ whiteSpace: "nowrap" }}
+          >
+            Complete Setup →
+          </button>
         )}
-      </div>
-
-      {/* Setup Steps */}
-      <div className="setup-section">
-        <h2>Setup Steps</h2>
-        <div className="setup-grid">
-
-          {/* Step 1 */}
-          <div className={`setup-step-card ${isRegistered ? "done" : ""}`}>
-            <div className="setup-step-header">
-              <div className="step-number">1</div>
-              <div>
-                <div className="setup-step-title">Register — Free</div>
-                <div className="setup-step-desc">
-                  Register your wallet with SentinelLP. No deposit required.
-                  You only pay a small fee when we actually rebalance.
-                </div>
-              </div>
-            </div>
-            <div className="setup-step-footer">
-              {isRegistered ? (
-                <div className="status-pill completed">✅ Completed</div>
-              ) : (
-                <div className="status-pill pending">⏳ Pending</div>
-              )}
-              {isRegistered ? (
-                <button className="btn-primary">Registered</button>
-              ) : (
-                <button className="btn-primary" onClick={handleRegister}>
-                  Register for Free
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Step 2 */}
-          <div className={`setup-step-card ${isApproved ? "done" : ""}`}>
-            <div className="setup-step-header">
-              <div className="step-number">2</div>
-              <div>
-                <div className="setup-step-title">Approve Operator</div>
-                <div className="setup-step-desc">
-                  Grant SentinelLP permission to manage your Uniswap v3 positions.
-                  Your tokens always return to YOUR wallet — we never hold them.
-                </div>
-              </div>
-            </div>
-            <div className="setup-step-footer">
-              {isApproved ? (
-                <div className="status-pill completed">✅ Approved</div>
-              ) : isRegistered ? (
-                <div className="status-pill pending">⏳ Pending</div>
-              ) : (
-                <div className="status-pill locked">🔒 Locked</div>
-              )}
-              {isApproved ? (
-                <button className="btn-primary">Manage Approval</button>
-              ) : isRegistered ? (
-                <button className="btn-primary" onClick={handleApprove}>
-                  Approve Operator
-                </button>
-              ) : (
-                <button className="btn-primary" style={{ opacity: 0.4 }} disabled>
-                  Complete Step 1 First
-                </button>
-              )}
-            </div>
-          </div>
-
-        </div>
       </div>
 
       {/* Stats */}
@@ -206,7 +156,9 @@ export function Dashboard() {
           <div className={`stat-card-value ${isFullyActive ? "green" : ""}`}>
             {isFullyActive ? "Active" : "Inactive"}
           </div>
-          <div className="stat-card-sub">{isFullyActive ? "Monitoring 24/7" : "Setup required"}</div>
+          <div className="stat-card-sub">
+            {isFullyActive ? "Monitoring 24/7" : "Setup required"}
+          </div>
         </div>
       </div>
 
@@ -230,7 +182,7 @@ export function Dashboard() {
               key={i}
               index={i}
               owner={address!}
-              isProtected={isFullyActive ?? false}
+              isProtected={isFullyActive}
             />
           ))}
         </div>

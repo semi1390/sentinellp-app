@@ -46,7 +46,8 @@ function formatPrice(price: number): string {
 
 function tickToPrice(tick: number, decimals0: number, decimals1: number): number {
   const rawPrice = Math.pow(1.0001, tick);
-  return rawPrice * Math.pow(10, decimals0 - decimals1);
+  // Adjust for token decimals: price is in token1/token0 raw units
+  return rawPrice * Math.pow(10, decimals1 - decimals0);
 }
 
 function getDisplayPrices(

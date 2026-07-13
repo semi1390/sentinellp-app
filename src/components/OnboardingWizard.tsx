@@ -59,7 +59,6 @@ interface OnboardingWizardProps {
 export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const { address } = useAccount();
   const [telegramClicked, setTelegramClicked] = useState(false);
-  const [checkingPosition, setCheckingPosition] = useState(false);
   const [positionVerified, setPositionVerified] = useState(false);
   const [registeredLocally, setRegisteredLocally] = useState(false);
   const [approvedLocally, setApprovedLocally] = useState(false);
@@ -117,11 +116,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     : !telegramClicked ? 5
     : 6;
 
-  const handleCheckPosition = async () => {
-    setCheckingPosition(true);
-    await refetchPositions();
+  const handleCheckPosition = () => {
     setPositionVerified(true);
-    setCheckingPosition(false);
+    refetchPositions(); // fire in background, don't wait
   };
 
   const handleRegister = () => {
@@ -207,9 +204,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                         <button
                           className="btn-wizard-secondary"
                           onClick={handleCheckPosition}
-                          disabled={checkingPosition}
                         >
-                          {checkingPosition ? "Checking..." : "I've opened one — Check Again"}
+                          I've opened one — Check Again
                         </button>
                       </div>
                     )}
@@ -218,10 +214,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       <button
                         className="btn-wizard-primary"
                         onClick={handleRegister}
-                        disabled={registerPending || registerWaiting}
+                        disabled={(registerPending || registerWaiting) && !registerSuccess}
                       >
                         {registerPending ? "Confirm in wallet..." :
-                         registerWaiting ? "Registering..." :
+                         registerWaiting && !registerSuccess ? "Registering..." :
                          "Register for Free"}
                       </button>
                     )}

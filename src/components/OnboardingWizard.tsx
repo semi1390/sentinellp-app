@@ -91,6 +91,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const { isSuccess: approveSuccess, isLoading: approveWaiting } = useWaitForTransactionReceipt({ hash: approveHash });
 
   useEffect(() => {
+    if (isRegistered) setRegisteredLocally(true);
+  }, [isRegistered]);
+
+  useEffect(() => {
+    if (isApproved) setApprovedLocally(true);
+  }, [isApproved]);
+
+  useEffect(() => {
     if (registerSuccess) {
       refetchRegistered();
       setRegisteredLocally(true);

@@ -1,9 +1,5 @@
-// ============================================================
-// SentinelLP — Onboarding Wizard
-// ============================================================
-
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   SENTINEL_OPERATOR_ADDRESS,
   POSITION_MANAGER_ADDRESS,
@@ -14,42 +10,12 @@ import {
 const TELEGRAM_BOT = "SentinelLP_bot";
 
 const STEPS = [
-  {
-    number: 1,
-    title: "Connect Wallet",
-    description: "Connect your Ethereum wallet to get started.",
-    detail: "Supports MetaMask, Coinbase, WalletConnect, and any EIP-1193 wallet.",
-  },
-  {
-    number: 2,
-    title: "Verify LP Position",
-    description: "You need at least one Uniswap v3 position to protect.",
-    detail: "Open a position on Uniswap, then come back and click Check Again.",
-  },
-  {
-    number: 3,
-    title: "Register Agent",
-    description: "Register your wallet with SentinelLP. Free — no deposit required.",
-    detail: "You only pay a small fee (0.05%) when we actually rebalance your position.",
-  },
-  {
-    number: 4,
-    title: "Approve Operator",
-    description: "Grant SentinelLP permission to manage your Uniswap v3 positions.",
-    detail: "Uses Uniswap's native operator system. Your tokens always return to YOUR wallet. Revoke anytime.",
-  },
-  {
-    number: 5,
-    title: "Connect Telegram",
-    description: "Get notified when SentinelLP rebalances your position.",
-    detail: "Optional but recommended. One tap to subscribe.",
-  },
-  {
-    number: 6,
-    title: "Agent Active",
-    description: "You're protected. SentinelLP is now monitoring your positions 24/7.",
-    detail: "The agent checks every 5 minutes. You'll hear from us when something happens.",
-  },
+  { number: 1, title: "Connect Wallet", description: "Connect your Ethereum wallet to get started.", detail: "Supports MetaMask, Coinbase, WalletConnect, and any EIP-1193 wallet." },
+  { number: 2, title: "Verify LP Position", description: "You need at least one Uniswap v3 position to protect.", detail: "Open a position on Uniswap, then come back and click Check Again." },
+  { number: 3, title: "Register Agent", description: "Register your wallet with SentinelLP. Free — no deposit required.", detail: "You only pay a small fee (0.05%) when we actually rebalance your position." },
+  { number: 4, title: "Approve Operator", description: "Grant SentinelLP permission to manage your Uniswap v3 positions.", detail: "Uses Uniswap's native operator system. Your tokens always return to YOUR wallet. Revoke anytime." },
+  { number: 5, title: "Connect Telegram", description: "Get notified when SentinelLP rebalances your position.", detail: "Optional but recommended. One tap to subscribe." },
+  { number: 6, title: "Agent Active", description: "You're protected. SentinelLP is now monitoring your positions 24/7.", detail: "The agent checks every 5 minutes. You'll hear from us when something happens." },
 ];
 
 interface OnboardingWizardProps {
@@ -60,17 +26,15 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const { address } = useAccount();
   const [telegramClicked, setTelegramClicked] = useState(false);
   const [positionVerified, setPositionVerified] = useState(false);
-  const [registeredLocally, setRegisteredLocally] = useState(false);
-  const [approvedLocally, setApprovedLocally] = useState(false);
 
-  const { data: isRegistered, refetch: refetchRegistered } = useReadContract({
+  const { data: isRegistered, isLoading: registeredLoading } = useReadContract({
     address: SENTINEL_OPERATOR_ADDRESS,
     abi: OPERATOR_ABI,
     functionName: "registered",
     args: [address!],
   });
 
-  const { data: isApproved, refetch: refetchApproved } = useReadContract({
+  const { data: isApproved, isLoading: approvedLoading } = useReadContract({
     address: POSITION_MANAGER_ADDRESS,
     abi: POSITION_MANAGER_ABI,
     functionName: "isApprovedForAll",
@@ -90,33 +54,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const { writeContract: approveOperator, data: approveHash, isPending: approvePending } = useWriteContract();
   const { isSuccess: approveSuccess, isLoading: approveWaiting } = useWaitForTransactionReceipt({ hash: approveHash });
 
-  useEffect(() => {
-    if (registerSuccess) {
-      refetchRegistered();
-      setRegisteredLocally(true);
-    }
-  }, [registerSuccess]);
-
-  useEffect(() => {
-    if (approveSuccess) {
-      refetchApproved();
-      setApprovedLocally(true);
-    }
-  }, [approveSuccess]);
-
   const hasWallet = !!address;
   const hasPosition = positionVerified || (positionCount !== undefined && positionCount > 0n);
-  const registered = registeredLocally || !!isRegistered;
-  const approved = approvedLocally || !!isApproved;
 
-  // Auto-advance if contract already shows registered/approved
-  useEffect(() => {
-    if (isRegistered && !registeredLocally) setRegisteredLocally(true);
-  }, [isRegistered, registeredLocally]);
-
-  useEffect(() => {
-    if (isApproved && !approvedLocally) setApprovedLocally(true);
-  }, [isApproved, approvedLocally]);
+  // Read directly from contract — no local state tricks
+  // Show loading state while contract reads are pending
+  const contractsLoading = registeredLoading || approvedLoading;
+  const registered = !!isRegistered || registerSuccess;
+  const approved = !!isApproved || approveSuccess;
 
   const currentStep = !hasWallet ? 1
     : !hasPosition ? 2
@@ -127,7 +72,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const handleCheckPosition = () => {
     setPositionVerified(true);
-    refetchPositions(); // fire in background, don't wait
+    refetchPositions();
   };
 
   const handleRegister = () => {
@@ -147,19 +92,28 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     });
   };
 
-  const handleTelegram = () => {
-    window.open(`https://t.me/${TELEGRAM_BOT}?start=${address}`, "_blank");
-    setTimeout(() => setTelegramClicked(true), 1000);
-  };
+  // Show loading while reading contract state
+  if (contractsLoading && hasWallet) {
+    return (
+      <div className="wizard">
+        <div className="wizard-header">
+          <div className="wizard-progress-track">
+            <div className="wizard-progress-fill" style={{ width: "0%" }} />
+          </div>
+          <div className="wizard-step-label">Loading...</div>
+        </div>
+        <div style={{ padding: "32px 0", color: "var(--text-3)", fontSize: 14 }}>
+          Checking your wallet status...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="wizard">
       <div className="wizard-header">
         <div className="wizard-progress-track">
-          <div
-            className="wizard-progress-fill"
-            style={{ width: `${((currentStep - 1) / 5) * 100}%` }}
-          />
+          <div className="wizard-progress-fill" style={{ width: `${((currentStep - 1) / 5) * 100}%` }} />
         </div>
         <div className="wizard-step-label">Step {Math.min(currentStep, 6)} of 6</div>
       </div>
@@ -171,26 +125,20 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           const isLocked = currentStep < step.number;
 
           return (
-            <div
-              key={step.number}
-              className={`wizard-step ${isDone ? "done" : ""} ${isActive ? "active" : ""} ${isLocked ? "locked" : ""}`}
-            >
+            <div key={step.number} className={`wizard-step ${isDone ? "done" : ""} ${isActive ? "active" : ""} ${isLocked ? "locked" : ""}`}>
               <div className="wizard-step-left">
                 <div className="wizard-step-circle">
                   {isDone ? (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                       <path d="M5 13l4 4L19 7" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                  ) : (
-                    <span>{step.number}</span>
-                  )}
+                  ) : <span>{step.number}</span>}
                 </div>
                 {step.number < 6 && <div className="wizard-step-line" />}
               </div>
 
               <div className="wizard-step-content">
                 <div className="wizard-step-title">{step.title}</div>
-
                 {(isActive || isDone) && (
                   <>
                     <div className="wizard-step-desc">{step.description}</div>
@@ -202,18 +150,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <div className="wizard-step-action">
                     {step.number === 2 && (
                       <div className="wizard-step-2-actions">
-                        <a
-                          href="https://app.uniswap.org/positions"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-wizard-primary"
-                        >
+                        <a href="https://app.uniswap.org/positions" target="_blank" rel="noopener noreferrer" className="btn-wizard-primary">
                           Open a Position on Uniswap →
                         </a>
-                        <button
-                          className="btn-wizard-secondary"
-                          onClick={handleCheckPosition}
-                        >
+                        <button className="btn-wizard-secondary" onClick={handleCheckPosition}>
                           I've opened one — Check Again
                         </button>
                       </div>
@@ -223,7 +163,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       <button
                         className="btn-wizard-primary"
                         onClick={handleRegister}
-                        disabled={(registerPending || registerWaiting) && !registerSuccess}
+                        disabled={registerPending || (registerWaiting && !registerSuccess)}
                       >
                         {registerPending ? "Confirm in wallet..." :
                          registerWaiting && !registerSuccess ? "Registering..." :
@@ -235,17 +175,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       <button
                         className="btn-wizard-primary"
                         onClick={handleApprove}
-                        disabled={approvePending || approveWaiting}
+                        disabled={approvePending || (approveWaiting && !approveSuccess)}
                       >
                         {approvePending ? "Confirm in wallet..." :
-                         approveWaiting ? "Approving..." :
+                         approveWaiting && !approveSuccess ? "Approving..." :
                          "Approve Operator"}
                       </button>
                     )}
 
                     {step.number === 5 && (
                       <div className="wizard-telegram">
-                        <button className="btn-wizard-primary" onClick={handleTelegram}>
+                        <button className="btn-wizard-primary" onClick={() => { window.open(`https://t.me/${TELEGRAM_BOT}?start=${address}`, "_blank"); setTimeout(() => setTelegramClicked(true), 1000); }}>
                           Open Telegram →
                         </button>
                         <button className="btn-wizard-skip" onClick={() => setTelegramClicked(true)}>
@@ -262,9 +202,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </div>
                 )}
 
-                {isDone && step.number !== 6 && (
-                  <div className="wizard-step-done-label">Completed</div>
-                )}
+                {isDone && step.number !== 6 && <div className="wizard-step-done-label">Completed</div>}
               </div>
             </div>
           );

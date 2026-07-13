@@ -107,8 +107,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const hasWallet = !!address;
   const hasPosition = positionVerified || (positionCount !== undefined && positionCount > 0n);
-  const registered = !!isRegistered;
-  const approved = !!isApproved;
+  const registered = registeredLocally || !!isRegistered;
+  const approved = approvedLocally || !!isApproved;
 
   const currentStep = !hasWallet ? 1
     : !hasPosition ? 2
@@ -120,7 +120,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const handleCheckPosition = async () => {
     setCheckingPosition(true);
     await refetchPositions();
-    // Advance regardless — user says they have a position, we trust them
     setPositionVerified(true);
     setCheckingPosition(false);
   };
@@ -149,7 +148,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   return (
     <div className="wizard">
-      {/* Progress bar */}
       <div className="wizard-header">
         <div className="wizard-progress-track">
           <div
@@ -160,7 +158,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         <div className="wizard-step-label">Step {Math.min(currentStep, 6)} of 6</div>
       </div>
 
-      {/* Steps */}
       <div className="wizard-steps">
         {STEPS.map((step) => {
           const isDone = currentStep > step.number;
@@ -197,8 +194,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
                 {isActive && (
                   <div className="wizard-step-action">
-
-                    {/* Step 2 — has two buttons: open Uniswap + check again */}
                     {step.number === 2 && (
                       <div className="wizard-step-2-actions">
                         <a
@@ -271,14 +266,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         })}
       </div>
 
-      {/* What happens next */}
       {currentStep === 6 && (
         <div className="wizard-timeline">
           <div className="wizard-timeline-title">What happens next</div>
           <div className="wizard-timeline-items">
             {[
               { time: "Now", label: "Monitoring starts", sub: "Agent checks your positions every 5 minutes" },
-              { time: "If out of range", label: "Claude evaluates", sub: "Compares daily fee loss vs gas cost" },
+              { time: "If out of range", label: "AI evaluates", sub: "Compares daily fee loss vs gas cost" },
               { time: "When worth it", label: "KeeperHub executes", sub: "5-step rebalance, gas sponsored" },
               { time: "Right after", label: "You're notified", sub: "Telegram message with tx hash" },
             ].map((item, i) => (

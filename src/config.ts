@@ -28,7 +28,7 @@ export const OPERATOR_ABI = [
   {
     name: "register",
     type: "function",
-    stateMutability: "payable",
+    stateMutability: "nonpayable",
     inputs: [],
     outputs: [],
   },
@@ -39,13 +39,7 @@ export const OPERATOR_ABI = [
     inputs: [],
     outputs: [],
   },
-  {
-    name: "addDeposit",
-    type: "function",
-    stateMutability: "payable",
-    inputs: [],
-    outputs: [],
-  },
+
   {
     name: "registered",
     type: "function",

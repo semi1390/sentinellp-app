@@ -91,14 +91,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const { isSuccess: approveSuccess, isLoading: approveWaiting } = useWaitForTransactionReceipt({ hash: approveHash });
 
   useEffect(() => {
-    if (isRegistered) setRegisteredLocally(true);
-  }, [isRegistered]);
-
-  useEffect(() => {
-    if (isApproved) setApprovedLocally(true);
-  }, [isApproved]);
-
-  useEffect(() => {
     if (registerSuccess) {
       refetchRegistered();
       setRegisteredLocally(true);
@@ -116,6 +108,15 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const hasPosition = positionVerified || (positionCount !== undefined && positionCount > 0n);
   const registered = registeredLocally || !!isRegistered;
   const approved = approvedLocally || !!isApproved;
+
+  // Auto-advance if contract already shows registered/approved
+  useEffect(() => {
+    if (isRegistered && !registeredLocally) setRegisteredLocally(true);
+  }, [isRegistered, registeredLocally]);
+
+  useEffect(() => {
+    if (isApproved && !approvedLocally) setApprovedLocally(true);
+  }, [isApproved, approvedLocally]);
 
   const currentStep = !hasWallet ? 1
     : !hasPosition ? 2

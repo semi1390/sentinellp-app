@@ -19,8 +19,8 @@ export const wagmiConfig = getDefaultConfig({
   projectId: WALLETCONNECT_PROJECT_ID,
   chains: [sepolia, mainnet],
   transports: {
-    [sepolia.id]: http(),
-    [mainnet.id]: http(),
+    [sepolia.id]: http("https://eth-sepolia.g.alchemy.com/v2/XsbVcrRIOhXdXaw2hoJvb"),
+    [mainnet.id]: http("https://eth-mainnet.g.alchemy.com/v2/XsbVcrRIOhXdXaw2hoJvb"),
   },
 });
 

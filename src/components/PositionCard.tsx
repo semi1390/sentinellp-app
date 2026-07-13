@@ -45,9 +45,9 @@ function formatPrice(price: number): string {
 }
 
 function tickToPrice(tick: number, decimals0: number, decimals1: number): number {
-  const rawPrice = Math.pow(1.0001, tick);
-  // Adjust for token decimals: price is in token1/token0 raw units
-  return rawPrice * Math.pow(10, decimals1 - decimals0);
+  // Uniswap v3 price = 1.0001^tick, adjusted for decimals
+  // price represents token1/token0 in human-readable units
+  return Math.pow(1.0001, tick) / Math.pow(10, decimals0 - decimals1);
 }
 
 function getDisplayPrices(
@@ -59,26 +59,9 @@ function getDisplayPrices(
   const dec0 = TOKEN_DECIMALS[sym0] ?? 18;
   const dec1 = TOKEN_DECIMALS[sym1] ?? 18;
 
-  const isEthPair =
-    (sym0 === "WETH" && (sym1 === "USDC" || sym1 === "USDT" || sym1 === "DAI")) ||
-    (sym1 === "WETH" && (sym0 === "USDC" || sym0 === "USDT" || sym0 === "DAI"));
-
+  // price = token1 per token0 in human units
   const priceLower = tickToPrice(tickLower, dec0, dec1);
   const priceUpper = tickToPrice(tickUpper, dec0, dec1);
-
-  if (isEthPair && sym0 === "WETH") {
-    return {
-      lower: formatPrice(1 / priceUpper),
-      upper: formatPrice(1 / priceLower),
-    };
-  }
-
-  if (isEthPair && sym1 === "WETH") {
-    return {
-      lower: formatPrice(priceLower),
-      upper: formatPrice(priceUpper),
-    };
-  }
 
   return {
     lower: formatPrice(priceLower),

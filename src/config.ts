@@ -9,7 +9,7 @@ import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 export const WALLETCONNECT_PROJECT_ID = "576bf4b5865694581e9c6476b6db76f9";
 
 // SentinelLP Operator Contract (Sepolia)
-export const SENTINEL_OPERATOR_ADDRESS = "0xd38Cc0d7dF6c3947BDA0F170bB4a9C5EC164BFf4" as const;
+export const SENTINEL_OPERATOR_ADDRESS = "0xAa1f24C091c0A44EE4A8afF41a7653916399C59d" as const;
 
 // Uniswap v3 NonfungiblePositionManager (Sepolia)
 export const POSITION_MANAGER_ADDRESS = "0x1238536071E1c677A632429e3655c799b22cDA52" as const;
@@ -52,13 +52,6 @@ export const OPERATOR_ABI = [
     stateMutability: "view",
     inputs: [{ name: "", type: "address" }],
     outputs: [{ name: "", type: "bool" }],
-  },
-  {
-    name: "getUserDeposit",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "user", type: "address" }],
-    outputs: [{ name: "", type: "uint256" }],
   },
   {
     name: "isUserApproved",

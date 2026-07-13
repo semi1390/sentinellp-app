@@ -1,5 +1,4 @@
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { parseEther, formatEther } from "viem";
 import { useEffect } from "react";
 import {
   SENTINEL_OPERATOR_ADDRESS,
@@ -16,13 +15,6 @@ export function Dashboard() {
     address: SENTINEL_OPERATOR_ADDRESS,
     abi: OPERATOR_ABI,
     functionName: "registered",
-    args: [address!],
-  });
-
-  const { data: deposit, refetch: refetchDeposit } = useReadContract({
-    address: SENTINEL_OPERATOR_ADDRESS,
-    abi: OPERATOR_ABI,
-    functionName: "getUserDeposit",
     args: [address!],
   });
 
@@ -58,7 +50,6 @@ export function Dashboard() {
   useEffect(() => {
     if (registerSuccess || approveSuccess || deregisterSuccess) {
       refetchRegistered();
-      refetchDeposit();
       refetchApproved();
     }
   }, [registerSuccess, approveSuccess, deregisterSuccess]);
@@ -68,7 +59,6 @@ export function Dashboard() {
       address: SENTINEL_OPERATOR_ADDRESS,
       abi: OPERATOR_ABI,
       functionName: "register",
-      value: parseEther("0.005"),
     });
   };
 
@@ -89,7 +79,6 @@ export function Dashboard() {
     });
   };
 
-  const depositETH = deposit ? formatEther(deposit as bigint) : "0";
   const isFullyActive = isRegistered && isApproved;
 
   return (
@@ -127,9 +116,10 @@ export function Dashboard() {
             <div className="setup-step-header">
               <div className="step-number">1</div>
               <div>
-                <div className="setup-step-title">Register & Deposit</div>
+                <div className="setup-step-title">Register — Free</div>
                 <div className="setup-step-desc">
-                  Register your vault and deposit ETH to start managing positions.
+                  Register your wallet with SentinelLP. No deposit required.
+                  You only pay a small fee when we actually rebalance.
                 </div>
               </div>
             </div>
@@ -140,10 +130,10 @@ export function Dashboard() {
                 <div className="status-pill pending">⏳ Pending</div>
               )}
               {isRegistered ? (
-                <button className="btn-primary">View Details</button>
+                <button className="btn-primary">Registered</button>
               ) : (
                 <button className="btn-primary" onClick={handleRegister}>
-                  Register (0.005 ETH)
+                  Register for Free
                 </button>
               )}
             </div>
@@ -156,7 +146,8 @@ export function Dashboard() {
               <div>
                 <div className="setup-step-title">Approve Operator</div>
                 <div className="setup-step-desc">
-                  Approve SentinelLP as operator to automate rebalances on your behalf.
+                  Grant SentinelLP permission to manage your Uniswap v3 positions.
+                  Your tokens always return to YOUR wallet — we never hold them.
                 </div>
               </div>
             </div>
@@ -176,7 +167,7 @@ export function Dashboard() {
                 </button>
               ) : (
                 <button className="btn-primary" style={{ opacity: 0.4 }} disabled>
-                  Complete Step 1
+                  Complete Step 1 First
                 </button>
               )}
             </div>
@@ -190,7 +181,6 @@ export function Dashboard() {
         <div className="stat-card">
           <div className="stat-card-header">
             <div className="stat-card-label">LP Positions</div>
-            <div className="stat-card-icon">🔷</div>
           </div>
           <div className="stat-card-value">{positionCount?.toString() ?? "0"}</div>
           <div className="stat-card-sub">Active positions</div>
@@ -198,23 +188,20 @@ export function Dashboard() {
         <div className="stat-card">
           <div className="stat-card-header">
             <div className="stat-card-label">Total Rebalances</div>
-            <div className="stat-card-icon">📈</div>
           </div>
           <div className="stat-card-value">{rebalanceCount?.toString() ?? "0"}</div>
           <div className="stat-card-sub">All time</div>
         </div>
         <div className="stat-card">
           <div className="stat-card-header">
-            <div className="stat-card-label">ETH Deposit</div>
-            <div className="stat-card-icon">⟠</div>
+            <div className="stat-card-label">Fee Per Rebalance</div>
           </div>
-          <div className="stat-card-value">{parseFloat(depositETH).toFixed(3)}</div>
-          <div className="stat-card-sub">Available balance</div>
+          <div className="stat-card-value">0.05%</div>
+          <div className="stat-card-sub">Charged at execution</div>
         </div>
         <div className="stat-card">
           <div className="stat-card-header">
             <div className="stat-card-label">Agent Status</div>
-            <div className="stat-card-icon">{isFullyActive ? "✅" : "⚪"}</div>
           </div>
           <div className={`stat-card-value ${isFullyActive ? "green" : ""}`}>
             {isFullyActive ? "Active" : "Inactive"}
@@ -266,7 +253,7 @@ export function Dashboard() {
         <div className="danger-zone">
           <div className="danger-zone-text">
             <h3>Danger Zone</h3>
-            <p>Deregistering will stop all automations and need to be done before withdrawing all funds.</p>
+            <p>Deregistering will stop monitoring your positions immediately.</p>
           </div>
           <button className="btn-danger" onClick={handleDeregister}>
             Deregister & Stop Agent

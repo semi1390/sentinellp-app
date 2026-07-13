@@ -51,13 +51,13 @@ function FlowDiagram() {
     {
       icon: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <rect width="24" height="24" rx="6" fill="#CC785C"/>
-          <path d="M7 17l2.5-7 2.5 4 2.5-4L17 17" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <circle cx="12" cy="12" r="10" stroke="#6366f1" strokeWidth="2"/>
+          <path d="M12 6v6l4 2" stroke="#6366f1" strokeWidth="2" strokeLinecap="round"/>
         </svg>
       ),
-      label: "Claude AI",
+      label: "AI Decision Engine",
       sub: "Economic reasoning",
-      color: "#CC785C",
+      color: "#6366f1",
       highlight: true,
     },
     {
@@ -179,13 +179,13 @@ export function LandingHero() {
                   </div>
                   <div className="powered-dot" />
                   <div className="powered-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#CC785C"/><path d="M7 17l2.5-7 2.5 4 2.5-4L17 17" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    Claude AI
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#375BD2"/><path d="M12 6v12M6 12h12" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
+                    Chainlink
                   </div>
                   <div className="powered-dot" />
                   <div className="powered-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#375BD2"/><path d="M12 6v12M6 12h12" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
-                    Chainlink
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#627EEA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Ethereum
                   </div>
                 </div>
               </div>
@@ -533,7 +533,7 @@ export function LandingHero() {
         <div className="footer-bottom">
           <span>© 2026 SentinelLP. Built for the KeeperHub Agents Onchain Hackathon.</span>
           <div className="footer-powered">
-            <span>Powered by KeeperHub · Claude AI · Chainlink</span>
+            <span>Powered by KeeperHub · Chainlink · Ethereum</span>
           </div>
         </div>
       </footer>

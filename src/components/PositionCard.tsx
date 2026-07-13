@@ -35,30 +35,23 @@ const TOKEN_COLORS: Record<string, string> = {
 };
 
 /**
- * Convert a Uniswap v3 tick to a price.
- * price = 1.0001^tick
- * For token pairs where token1 is the "base" (e.g. WETH/USDT),
- * we need to invert the price.
+ * Convert a Uniswap v3 tick to a price, with decimal adjustment.
+ * Uniswap stores price as token1/token0 in raw token units.
+ * For WETH(18 decimals)/USDT(6 decimals): adjust by 10^(18-6) = 10^12
  */
-function tickToPrice(tick: number): number {
-  return Math.pow(1.0001, tick);
+function tickToPrice(tick: number, decimals0: number, decimals1: number): number {
+  const rawPrice = Math.pow(1.0001, tick);
+  return rawPrice * Math.pow(10, decimals0 - decimals1);
 }
 
-/**
- * Format a price for display.
- * Handles both very small (e.g. 0.000593) and large (e.g. 1780) numbers.
- */
-function formatPrice(price: number): string {
-  if (price >= 1000) return `$${price.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
-  if (price >= 1) return `$${price.toFixed(2)}`;
-  if (price >= 0.01) return `$${price.toFixed(4)}`;
-  return `$${price.toExponential(2)}`;
-}
+const TOKEN_DECIMALS: Record<string, number> = {
+  WETH: 18, ETH: 18,
+  USDC: 6, USDT: 6,
+  DAI: 18, WBTC: 8,
+};
 
 /**
  * Get display prices for the tick range.
- * For WETH/USDT and WETH/USDC pairs, invert the price since
- * Uniswap stores price as token1/token0 but we want USD per ETH.
  */
 function getDisplayPrices(
   tickLower: number,
@@ -66,20 +59,28 @@ function getDisplayPrices(
   sym0: string,
   sym1: string
 ): { lower: string; upper: string } {
+  const dec0 = TOKEN_DECIMALS[sym0] ?? 18;
+  const dec1 = TOKEN_DECIMALS[sym1] ?? 18;
+
   const isEthPair =
     (sym0 === "WETH" && (sym1 === "USDC" || sym1 === "USDT" || sym1 === "DAI")) ||
     (sym1 === "WETH" && (sym0 === "USDC" || sym0 === "USDT" || sym0 === "DAI"));
 
-  const priceLower = tickToPrice(tickLower);
-  const priceUpper = tickToPrice(tickUpper);
+  const priceLower = tickToPrice(tickLower, dec0, dec1);
+  const priceUpper = tickToPrice(tickUpper, dec0, dec1);
 
-  if (isEthPair) {
-    // Invert: show USD per ETH
-    const lower = sym0 === "WETH" ? 1 / priceUpper : priceLower;
-    const upper = sym0 === "WETH" ? 1 / priceLower : priceUpper;
+  if (isEthPair && sym0 === "WETH") {
+    // Invert to get USD per ETH
     return {
-      lower: formatPrice(lower),
-      upper: formatPrice(upper),
+      lower: formatPrice(1 / priceUpper),
+      upper: formatPrice(1 / priceLower),
+    };
+  }
+
+  if (isEthPair && sym1 === "WETH") {
+    return {
+      lower: formatPrice(priceLower),
+      upper: formatPrice(priceUpper),
     };
   }
 

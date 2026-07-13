@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
-// Simple fade-in on scroll hook
 function useFadeIn() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -26,61 +25,178 @@ function FadeIn({ children, delay = 0, className = "" }: { children: React.React
   );
 }
 
+function FlowDiagram() {
+  const steps = [
+    {
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="#6366f1" strokeWidth="2" strokeLinecap="round"/>
+          <circle cx="12" cy="7" r="4" stroke="#6366f1" strokeWidth="2"/>
+        </svg>
+      ),
+      label: "Your Wallet",
+      sub: "Any Ethereum wallet",
+      color: "#6366f1",
+    },
+    {
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" fill="#6366f1"/>
+        </svg>
+      ),
+      label: "SentinelLP Agent",
+      sub: "Monitors every 5 min",
+      color: "#6366f1",
+    },
+    {
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <rect width="24" height="24" rx="6" fill="#CC785C"/>
+          <path d="M7 17l2.5-7 2.5 4 2.5-4L17 17" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
+      label: "Claude AI",
+      sub: "Economic reasoning",
+      color: "#CC785C",
+      highlight: true,
+    },
+    {
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" fill="#00D395"/>
+          <path d="M8 12l3 3 5-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
+      label: "KeeperHub",
+      sub: "Gas-sponsored execution",
+      color: "#00D395",
+      highlight: true,
+    },
+    {
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="7" width="20" height="14" rx="2" stroke="#6366f1" strokeWidth="2"/>
+          <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="#6366f1" strokeWidth="2"/>
+        </svg>
+      ),
+      label: "Ethereum",
+      sub: "Onchain confirmation",
+      color: "#6366f1",
+    },
+    {
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 .18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.18 6.18l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0121.99 15l-.07 1.92z" stroke="#6366f1" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      ),
+      label: "You're Notified",
+      sub: "Telegram + audit trail",
+      color: "#6366f1",
+    },
+  ];
+
+  return (
+    <div className="hero-flow">
+      <div className="hero-flow-card">
+        <div className="hero-flow-title">How it executes</div>
+        <div className="hero-flow-steps">
+          {steps.map((step, i) => (
+            <div key={i} className="hero-flow-step">
+              <div className="hero-flow-step-left">
+                <div className={`hero-flow-icon ${step.highlight ? "highlight" : ""}`}>
+                  {step.icon}
+                </div>
+                {i < steps.length - 1 && <div className="hero-flow-line" />}
+              </div>
+              <div className="hero-flow-text">
+                <div className="hero-flow-label">{step.label}</div>
+                <div className="hero-flow-sub">{step.sub}</div>
+              </div>
+              {step.highlight && (
+                <div className="hero-flow-badge">
+                  {step.label === "Claude AI" ? "Decides" : "Executes"}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="hero-flow-footer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M5 13l4 4L19 7" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Gas sponsored · MEV protected · Non-custodial
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function LandingHero() {
   return (
     <div className="landing">
 
       {/* ---- HERO ---- */}
       <section className="hero-section">
-        <FadeIn className="hero-badge-wrap">
-          <div className="hero-badge">Autonomous Uniswap v3 LP Position Manager</div>
-        </FadeIn>
-        <FadeIn delay={80}>
-          <h1 className="hero-title">
-            Your Uniswap v3 positions,<br />
-            <span className="hero-highlight">autonomously protected.</span>
-          </h1>
-        </FadeIn>
-        <FadeIn delay={160}>
-          <p className="hero-subtitle">
-            SentinelLP monitors your LP positions 24/7. When a position drifts out of range,
-            our AI agent rebalances it automatically — gas sponsored, MEV protected,
-            with a full audit trail.
-          </p>
-        </FadeIn>
-        <FadeIn delay={240} className="hero-cta-wrap">
-          <ConnectButton.Custom>
-            {({ openConnectModal }) => (
-              <button className="btn-hero" onClick={openConnectModal}>
-                Get Started — Connect Wallet
-              </button>
-            )}
-          </ConnectButton.Custom>
-          <p className="hero-terms">
-            No private keys required · Non-custodial · 0.05% per rebalance
-          </p>
-        </FadeIn>
-        <FadeIn delay={320} className="hero-powered-wrap">
-          <div className="hero-powered">
-            <span className="powered-label">Powered by</span>
-            <div className="powered-items">
-              <div className="powered-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#00D395"/><path d="M8 12l3 3 5-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                KeeperHub
+        <div className="hero-inner">
+          {/* Left — text */}
+          <div className="hero-left">
+            <FadeIn className="hero-badge-wrap">
+              <div className="hero-badge">Autonomous Uniswap v3 LP Position Manager</div>
+            </FadeIn>
+            <FadeIn delay={80}>
+              <h1 className="hero-title">
+                Your Uniswap v3<br />
+                positions,{" "}
+                <span className="hero-highlight">autonomously<br />protected.</span>
+              </h1>
+            </FadeIn>
+            <FadeIn delay={160}>
+              <p className="hero-subtitle">
+                SentinelLP monitors your LP positions 24/7. When a position drifts out of range,
+                our AI agent rebalances it automatically — gas sponsored, MEV protected,
+                with a full audit trail.
+              </p>
+            </FadeIn>
+            <FadeIn delay={240} className="hero-cta-wrap">
+              <ConnectButton.Custom>
+                {({ openConnectModal }) => (
+                  <button className="btn-hero" onClick={openConnectModal}>
+                    Get Started — Connect Wallet
+                  </button>
+                )}
+              </ConnectButton.Custom>
+              <p className="hero-terms">
+                No private keys required · Non-custodial · 0.05% per rebalance
+              </p>
+            </FadeIn>
+            <FadeIn delay={320} className="hero-powered-wrap">
+              <div className="hero-powered">
+                <span className="powered-label">Powered by</span>
+                <div className="powered-items">
+                  <div className="powered-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#00D395"/><path d="M8 12l3 3 5-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    KeeperHub
+                  </div>
+                  <div className="powered-dot" />
+                  <div className="powered-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#CC785C"/><path d="M7 17l2.5-7 2.5 4 2.5-4L17 17" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Claude AI
+                  </div>
+                  <div className="powered-dot" />
+                  <div className="powered-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#375BD2"/><path d="M12 6v12M6 12h12" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
+                    Chainlink
+                  </div>
+                </div>
               </div>
-              <div className="powered-dot" />
-              <div className="powered-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#CC785C"/><path d="M7 17l2.5-7 2.5 4 2.5-4L17 17" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                Claude AI
-              </div>
-              <div className="powered-dot" />
-              <div className="powered-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#375BD2"/><path d="M12 6v12M6 12h12" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
-                Chainlink
-              </div>
-            </div>
+            </FadeIn>
           </div>
-        </FadeIn>
+
+          {/* Right — flow diagram */}
+          <FadeIn delay={200} className="hero-right">
+            <FlowDiagram />
+          </FadeIn>
+        </div>
       </section>
 
       {/* ---- STATS BAR ---- */}
@@ -119,8 +235,8 @@ export function LandingHero() {
             {
               num: "01",
               title: "Connect & Register",
-              desc: "Connect your wallet and deposit a small ETH reserve to cover rebalance fees. Takes 2 minutes.",
-              detail: "0.005 ETH deposit covers ~10 rebalances",
+              desc: "Connect your wallet and register with SentinelLP. Free — no deposit required. Takes 2 minutes.",
+              detail: "One transaction. No upfront cost.",
             },
             {
               num: "02",
@@ -285,7 +401,7 @@ export function LandingHero() {
               <div className="pricing-name">Pay per rebalance</div>
               <div className="pricing-price">0.05% <span>per rebalance</span></div>
               <p className="pricing-desc">
-                Deducted automatically from your ETH deposit each time SentinelLP rebalances a position.
+                Charged only when SentinelLP rebalances your position.
                 If it's not worth rebalancing, we don't charge.
               </p>
               <ConnectButton.Custom>
@@ -305,7 +421,7 @@ export function LandingHero() {
                 "Claude AI reasoning on every decision",
                 "Chainlink real-time price feeds",
                 "Non-custodial — revoke anytime",
-                "0.005 ETH initial deposit (~10 rebalances)",
+                "Free to register — pay only on rebalance",
               ].map((item, i) => (
                 <div key={i} className="pricing-feature">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -333,7 +449,7 @@ export function LandingHero() {
             },
             {
               q: "How does gas sponsorship work?",
-              a: "KeeperHub sponsors gas for all rebalance transactions. You don't need ETH in your wallet for gas. The only ETH required is the small deposit (0.005 ETH) that covers SentinelLP's service fee.",
+              a: "KeeperHub sponsors gas for rebalance transactions on Sepolia testnet. On mainnet, gas handling depends on your KeeperHub configuration. You never need ETH in your wallet specifically for gas.",
             },
             {
               q: "How does the AI decide when to rebalance?",
@@ -345,7 +461,7 @@ export function LandingHero() {
             },
             {
               q: "Can I stop the agent?",
-              a: "Yes, anytime. Click Deregister in the dashboard to stop monitoring and withdraw your remaining deposit. You can also revoke operator approval directly from Uniswap.",
+              a: "Yes, anytime. Click Deregister in the dashboard to stop monitoring. You can also revoke operator approval directly from Uniswap's interface.",
             },
             {
               q: "What network is this on?",

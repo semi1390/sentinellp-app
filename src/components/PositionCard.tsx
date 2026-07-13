@@ -45,9 +45,7 @@ function formatPrice(price: number): string {
 }
 
 function tickToPrice(tick: number, decimals0: number, decimals1: number): number {
-  // Uniswap v3 price = 1.0001^tick, adjusted for decimals
-  // price represents token1/token0 in human-readable units
-  return Math.pow(1.0001, tick) / Math.pow(10, decimals0 - decimals1);
+  return Math.pow(1.0001, tick) * Math.pow(10, decimals0 - decimals1);
 }
 
 function getDisplayPrices(

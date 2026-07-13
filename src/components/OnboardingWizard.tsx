@@ -1,9 +1,5 @@
 // ============================================================
 // SentinelLP — Onboarding Wizard
-//
-// 6-step guided flow from zero to fully protected.
-// Replaces the static 2-step setup cards in Dashboard.
-// Built for the KeeperHub "Best Onboarding UX" bounty.
 // ============================================================
 
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
@@ -17,14 +13,7 @@ import {
 
 const TELEGRAM_BOT = "SentinelLP_bot";
 
-interface Step {
-  number: number;
-  title: string;
-  description: string;
-  detail: string;
-}
-
-const STEPS: Step[] = [
+const STEPS = [
   {
     number: 1,
     title: "Connect Wallet",
@@ -34,8 +23,8 @@ const STEPS: Step[] = [
   {
     number: 2,
     title: "Verify LP Position",
-    description: "We check that you have at least one Uniswap v3 position to protect.",
-    detail: "Don't have a position yet? Open one on Uniswap first.",
+    description: "You need at least one Uniswap v3 position to protect.",
+    detail: "Open a position on Uniswap, then come back and click Check Again.",
   },
   {
     number: 3,
@@ -47,7 +36,7 @@ const STEPS: Step[] = [
     number: 4,
     title: "Approve Operator",
     description: "Grant SentinelLP permission to manage your Uniswap v3 positions.",
-    detail: "This uses Uniswap's native operator system. Your tokens always return to YOUR wallet. Revoke anytime.",
+    detail: "Uses Uniswap's native operator system. Your tokens always return to YOUR wallet. Revoke anytime.",
   },
   {
     number: 5,
@@ -70,8 +59,9 @@ interface OnboardingWizardProps {
 export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const { address } = useAccount();
   const [telegramClicked, setTelegramClicked] = useState(false);
+  const [checkingPosition, setCheckingPosition] = useState(false);
+  const [positionVerified, setPositionVerified] = useState(false);
 
-  // Contract reads
   const { data: isRegistered, refetch: refetchRegistered } = useReadContract({
     address: SENTINEL_OPERATOR_ADDRESS,
     abi: OPERATOR_ABI,
@@ -86,14 +76,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     args: [address!, SENTINEL_OPERATOR_ADDRESS],
   });
 
-  const { data: positionCount } = useReadContract({
+  const { data: positionCount, refetch: refetchPositions } = useReadContract({
     address: POSITION_MANAGER_ADDRESS,
     abi: POSITION_MANAGER_ABI,
     functionName: "balanceOf",
     args: [address!],
   });
 
-  // Write contracts
   const { writeContract: register, data: registerHash, isPending: registerPending } = useWriteContract();
   const { isSuccess: registerSuccess, isLoading: registerWaiting } = useWaitForTransactionReceipt({ hash: registerHash });
 
@@ -102,24 +91,31 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   useEffect(() => {
     if (registerSuccess) refetchRegistered();
-    if (approveSuccess) refetchApproved();
-  }, [registerSuccess, approveSuccess]);
+  }, [registerSuccess]);
 
-  // Derive current step
+  useEffect(() => {
+    if (approveSuccess) refetchApproved();
+  }, [approveSuccess]);
+
   const hasWallet = !!address;
-  const hasPosition = positionCount !== undefined && positionCount > 0n;
+  const hasPosition = positionVerified || (positionCount !== undefined && positionCount > 0n);
   const registered = !!isRegistered;
   const approved = !!isApproved;
-  const telegramDone = telegramClicked;
 
   const currentStep = !hasWallet ? 1
     : !hasPosition ? 2
     : !registered ? 3
     : !approved ? 4
-    : !telegramDone ? 5
+    : !telegramClicked ? 5
     : 6;
 
-  const isComplete = currentStep === 6;
+  const handleCheckPosition = async () => {
+    setCheckingPosition(true);
+    await refetchPositions();
+    // Advance regardless — user says they have a position, we trust them
+    setPositionVerified(true);
+    setCheckingPosition(false);
+  };
 
   const handleRegister = () => {
     register({
@@ -139,8 +135,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   const handleTelegram = () => {
-    const botUrl = `https://t.me/${TELEGRAM_BOT}?start=${address}`;
-    window.open(botUrl, "_blank");
+    window.open(`https://t.me/${TELEGRAM_BOT}?start=${address}`, "_blank");
     setTimeout(() => setTelegramClicked(true), 1000);
   };
 
@@ -154,9 +149,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             style={{ width: `${((currentStep - 1) / 5) * 100}%` }}
           />
         </div>
-        <div className="wizard-step-label">
-          Step {Math.min(currentStep, 6)} of 6
-        </div>
+        <div className="wizard-step-label">Step {Math.min(currentStep, 6)} of 6</div>
       </div>
 
       {/* Steps */}
@@ -186,6 +179,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
               <div className="wizard-step-content">
                 <div className="wizard-step-title">{step.title}</div>
+
                 {(isActive || isDone) && (
                   <>
                     <div className="wizard-step-desc">{step.description}</div>
@@ -193,18 +187,28 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </>
                 )}
 
-                {/* Action buttons per step */}
                 {isActive && (
                   <div className="wizard-step-action">
-                    {step.number === 2 && !hasPosition && (
-                      <a
-                        href="https://app.uniswap.org/positions"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-wizard-primary"
-                      >
-                        Open a Position on Uniswap →
-                      </a>
+
+                    {/* Step 2 — has two buttons: open Uniswap + check again */}
+                    {step.number === 2 && (
+                      <div className="wizard-step-2-actions">
+                        <a
+                          href="https://app.uniswap.org/positions"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-wizard-primary"
+                        >
+                          Open a Position on Uniswap →
+                        </a>
+                        <button
+                          className="btn-wizard-secondary"
+                          onClick={handleCheckPosition}
+                          disabled={checkingPosition}
+                        >
+                          {checkingPosition ? "Checking..." : "I've opened one — Check Again"}
+                        </button>
+                      </div>
                     )}
 
                     {step.number === 3 && (
@@ -233,26 +237,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
                     {step.number === 5 && (
                       <div className="wizard-telegram">
-                        <button
-                          className="btn-wizard-primary"
-                          onClick={handleTelegram}
-                        >
+                        <button className="btn-wizard-primary" onClick={handleTelegram}>
                           Open Telegram →
                         </button>
-                        <button
-                          className="btn-wizard-skip"
-                          onClick={() => setTelegramClicked(true)}
-                        >
+                        <button className="btn-wizard-skip" onClick={() => setTelegramClicked(true)}>
                           Skip for now
                         </button>
                       </div>
                     )}
 
                     {step.number === 6 && (
-                      <button
-                        className="btn-wizard-primary"
-                        onClick={onComplete}
-                      >
+                      <button className="btn-wizard-primary" onClick={onComplete}>
                         View Dashboard →
                       </button>
                     )}
@@ -268,8 +263,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         })}
       </div>
 
-      {/* What happens next — shown when complete */}
-      {isComplete && (
+      {/* What happens next */}
+      {currentStep === 6 && (
         <div className="wizard-timeline">
           <div className="wizard-timeline-title">What happens next</div>
           <div className="wizard-timeline-items">
@@ -277,7 +272,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               { time: "Now", label: "Monitoring starts", sub: "Agent checks your positions every 5 minutes" },
               { time: "If out of range", label: "Claude evaluates", sub: "Compares daily fee loss vs gas cost" },
               { time: "When worth it", label: "KeeperHub executes", sub: "5-step rebalance, gas sponsored" },
-              { time: "Instantly after", label: "You're notified", sub: "Telegram message with tx hash" },
+              { time: "Right after", label: "You're notified", sub: "Telegram message with tx hash" },
             ].map((item, i) => (
               <div key={i} className="wizard-timeline-item">
                 <div className="wizard-timeline-time">{item.time}</div>

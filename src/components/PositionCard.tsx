@@ -14,10 +14,8 @@ const FEE_LABELS: Record<number, string> = {
 };
 
 const TOKEN_SYMBOLS: Record<string, string> = {
-  // Sepolia
   "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238": "USDC",
   "0xfff9976782d46cc05630d1f6ebab18b2324d6b14": "WETH",
-  // Mainnet
   "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": "WETH",
   "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": "USDC",
   "0xdac17f958d2ee523a2206206994597c13d831ec7": "USDT",
@@ -25,24 +23,13 @@ const TOKEN_SYMBOLS: Record<string, string> = {
   "0x6b175474e89094c44da98b954eedeac495271d0f": "DAI",
 };
 
-const TOKEN_COLORS: Record<string, string> = {
-  USDC: "#2775CA",
-  USDT: "#26A17B",
-  WETH: "#627EEA",
-  ETH:  "#627EEA",
-  WBTC: "#F7931A",
-  DAI:  "#F5AC37",
+const TOKEN_LOGOS: Record<string, string> = {
+  WETH: "https://raw.githubusercontent.com/Uniswap/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png",
+  USDC: "https://raw.githubusercontent.com/Uniswap/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png",
+  USDT: "https://raw.githubusercontent.com/Uniswap/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png",
+  DAI:  "https://raw.githubusercontent.com/Uniswap/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png",
+  WBTC: "https://raw.githubusercontent.com/Uniswap/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png",
 };
-
-/**
- * Convert a Uniswap v3 tick to a price, with decimal adjustment.
- * Uniswap stores price as token1/token0 in raw token units.
- * For WETH(18 decimals)/USDT(6 decimals): adjust by 10^(18-6) = 10^12
- */
-function tickToPrice(tick: number, decimals0: number, decimals1: number): number {
-  const rawPrice = Math.pow(1.0001, tick);
-  return rawPrice * Math.pow(10, decimals0 - decimals1);
-}
 
 const TOKEN_DECIMALS: Record<string, number> = {
   WETH: 18, ETH: 18,
@@ -50,9 +37,18 @@ const TOKEN_DECIMALS: Record<string, number> = {
   DAI: 18, WBTC: 8,
 };
 
-/**
- * Get display prices for the tick range.
- */
+function formatPrice(price: number): string {
+  if (price >= 1000) return `$${price.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+  if (price >= 1) return `$${price.toFixed(2)}`;
+  if (price >= 0.01) return `$${price.toFixed(4)}`;
+  return `$${price.toExponential(2)}`;
+}
+
+function tickToPrice(tick: number, decimals0: number, decimals1: number): number {
+  const rawPrice = Math.pow(1.0001, tick);
+  return rawPrice * Math.pow(10, decimals0 - decimals1);
+}
+
 function getDisplayPrices(
   tickLower: number,
   tickUpper: number,
@@ -70,7 +66,6 @@ function getDisplayPrices(
   const priceUpper = tickToPrice(tickUpper, dec0, dec1);
 
   if (isEthPair && sym0 === "WETH") {
-    // Invert to get USD per ETH
     return {
       lower: formatPrice(1 / priceUpper),
       upper: formatPrice(1 / priceLower),
@@ -123,14 +118,13 @@ export function PositionCard({ index, owner, isProtected }: Props) {
 
   const sym0 = TOKEN_SYMBOLS[token0.toLowerCase()] ?? token0.slice(0, 6) + "...";
   const sym1 = TOKEN_SYMBOLS[token1.toLowerCase()] ?? token1.slice(0, 6) + "...";
-  const color0 = TOKEN_COLORS[sym0] ?? "#6366f1";
-  const color1 = TOKEN_COLORS[sym1] ?? "#6366f1";
+  const logo0 = TOKEN_LOGOS[sym0];
+  const logo1 = TOKEN_LOGOS[sym1];
 
   const { lower: priceLower, upper: priceUpper } = getDisplayPrices(
     tickLower, tickUpper, sym0, sym1
   );
 
-  // Uniswap v3 position URL
   const uniswapUrl = `https://app.uniswap.org/positions/v3/ethereum/${tokenId}`;
 
   return (
@@ -138,11 +132,17 @@ export function PositionCard({ index, owner, isProtected }: Props) {
       <div className="position-header">
         <div className="position-pair">
           <div className="token-icons">
-            <div className="token-icon" style={{ background: color0 + "22", color: color0, fontWeight: 700, fontSize: 11 }}>
-              {sym0.slice(0, 1)}
+            <div className="token-icon" style={{ background: "#f1f5f9", overflow: "hidden", padding: 0 }}>
+              {logo0
+                ? <img src={logo0} alt={sym0} width={26} height={26} style={{ borderRadius: "50%", display: "block" }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                : <span style={{ fontSize: 11, fontWeight: 700 }}>{sym0.slice(0, 1)}</span>
+              }
             </div>
-            <div className="token-icon" style={{ background: color1 + "22", color: color1, fontWeight: 700, fontSize: 11 }}>
-              {sym1.slice(0, 1)}
+            <div className="token-icon" style={{ background: "#f1f5f9", overflow: "hidden", padding: 0 }}>
+              {logo1
+                ? <img src={logo1} alt={sym1} width={26} height={26} style={{ borderRadius: "50%", display: "block" }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                : <span style={{ fontSize: 11, fontWeight: 700 }}>{sym1.slice(0, 1)}</span>
+              }
             </div>
           </div>
           <span className="pair-name">{sym0} / {sym1}</span>

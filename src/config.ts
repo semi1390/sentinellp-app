@@ -8,11 +8,11 @@ import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 
 export const WALLETCONNECT_PROJECT_ID = "576bf4b5865694581e9c6476b6db76f9";
 
-// SentinelLP Operator Contract (Sepolia)
-export const SENTINEL_OPERATOR_ADDRESS = "0xAa1f24C091c0A44EE4A8afF41a7653916399C59d" as const;
+// SentinelLP Operator Contract 
+export const SENTINEL_OPERATOR_ADDRESS = "0x2734C05486aEe0f40948a6565F66Ed3B20fE4015" as const;
 
-// Uniswap v3 NonfungiblePositionManager (Sepolia)
-export const POSITION_MANAGER_ADDRESS = "0x1238536071E1c677A632429e3655c799b22cDA52" as const;
+// Uniswap v3 NonfungiblePositionManager 
+export const POSITION_MANAGER_ADDRESS = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88" as const;
 
 export const wagmiConfig = getDefaultConfig({
   appName: "SentinelLP",

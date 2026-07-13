@@ -61,6 +61,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [telegramClicked, setTelegramClicked] = useState(false);
   const [checkingPosition, setCheckingPosition] = useState(false);
   const [positionVerified, setPositionVerified] = useState(false);
+  const [registeredLocally, setRegisteredLocally] = useState(false);
+  const [approvedLocally, setApprovedLocally] = useState(false);
 
   const { data: isRegistered, refetch: refetchRegistered } = useReadContract({
     address: SENTINEL_OPERATOR_ADDRESS,
@@ -90,11 +92,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const { isSuccess: approveSuccess, isLoading: approveWaiting } = useWaitForTransactionReceipt({ hash: approveHash });
 
   useEffect(() => {
-    if (registerSuccess) refetchRegistered();
+    if (registerSuccess) {
+      refetchRegistered();
+      setRegisteredLocally(true);
+    }
   }, [registerSuccess]);
 
   useEffect(() => {
-    if (approveSuccess) refetchApproved();
+    if (approveSuccess) {
+      refetchApproved();
+      setApprovedLocally(true);
+    }
   }, [approveSuccess]);
 
   const hasWallet = !!address;

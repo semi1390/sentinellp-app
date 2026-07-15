@@ -1,5 +1,5 @@
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   SENTINEL_OPERATOR_ADDRESS,
   POSITION_MANAGER_ADDRESS,
@@ -12,6 +12,7 @@ import { OnboardingWizard } from "./OnboardingWizard";
 export function Dashboard() {
   const { address } = useAccount();
   const [wizardDismissed, setWizardDismissed] = useState(false);
+  const [activePositionCount, setActivePositionCount] = useState(0);
 
   const { data: isRegistered, refetch: refetchRegistered } = useReadContract({
     address: SENTINEL_OPERATOR_ADDRESS,
@@ -50,9 +51,16 @@ export function Dashboard() {
     }
   }, [deregisterSuccess]);
 
-  const isFullyActive = !!isRegistered && !!isApproved;
+  // Reset count when positionCount changes (e.g. new position opened)
+  useEffect(() => {
+    setActivePositionCount(0);
+  }, [positionCount]);
 
-  // Show wizard if not fully set up AND user hasn't dismissed it
+  const handleActivePosition = useCallback(() => {
+    setActivePositionCount(c => c + 1);
+  }, []);
+
+  const isFullyActive = !!isRegistered && !!isApproved;
   const showWizard = !isFullyActive && !wizardDismissed;
 
   const handleDeregister = () => {
@@ -69,14 +77,9 @@ export function Dashboard() {
         <div className="wizard-page-header">
           <div>
             <h1 className="wizard-page-title">Get Started</h1>
-            <p className="wizard-page-sub">
-              Complete setup to start protecting your Uniswap v3 positions.
-            </p>
+            <p className="wizard-page-sub">Complete setup to start protecting your Uniswap v3 positions.</p>
           </div>
-          <button
-            className="btn-wizard-skip"
-            onClick={() => setWizardDismissed(true)}
-          >
+          <button className="btn-wizard-skip" onClick={() => setWizardDismissed(true)}>
             Skip setup →
           </button>
         </div>
@@ -116,11 +119,7 @@ export function Dashboard() {
           </div>
         </div>
         {!isFullyActive && (
-          <button
-            className="btn-wizard-primary"
-            onClick={() => setWizardDismissed(false)}
-            style={{ whiteSpace: "nowrap" }}
-          >
+          <button className="btn-wizard-primary" onClick={() => setWizardDismissed(false)} style={{ whiteSpace: "nowrap" }}>
             Complete Setup →
           </button>
         )}
@@ -132,7 +131,7 @@ export function Dashboard() {
           <div className="stat-card-header">
             <div className="stat-card-label">LP Positions</div>
           </div>
-          <div className="stat-card-value">{positionCount?.toString() ?? "0"}</div>
+          <div className="stat-card-value">{activePositionCount}</div>
           <div className="stat-card-sub">Active positions</div>
         </div>
         <div className="stat-card">
@@ -165,12 +164,7 @@ export function Dashboard() {
       {/* Positions */}
       <div className="positions-header">
         <h2>Your LP Positions</h2>
-        <a
-          href="https://app.uniswap.org/positions"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-add"
-        >
+        <a href="https://app.uniswap.org/positions" target="_blank" rel="noopener noreferrer" className="btn-add">
           + Add Position
         </a>
       </div>
@@ -183,18 +177,14 @@ export function Dashboard() {
               index={i}
               owner={address!}
               isProtected={isFullyActive}
+              onActive={handleActivePosition}
             />
           ))}
         </div>
       ) : (
         <div className="no-positions">
           <p>No Uniswap v3 positions found on this wallet.</p>
-          <a
-            href="https://app.uniswap.org/positions"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-secondary"
-          >
+          <a href="https://app.uniswap.org/positions" target="_blank" rel="noopener noreferrer" className="btn-secondary">
             Open a Position on Uniswap →
           </a>
         </div>
@@ -215,11 +205,7 @@ export function Dashboard() {
 
       <div className="contract-info">
         Contract:{" "}
-        <a
-          href={`https://etherscan.io/address/${SENTINEL_OPERATOR_ADDRESS}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href={`https://etherscan.io/address/${SENTINEL_OPERATOR_ADDRESS}`} target="_blank" rel="noopener noreferrer">
           {SENTINEL_OPERATOR_ADDRESS.slice(0, 6)}...{SENTINEL_OPERATOR_ADDRESS.slice(-4)}
         </a>
       </div>

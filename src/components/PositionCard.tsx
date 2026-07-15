@@ -1,10 +1,12 @@
 import { useReadContract } from "wagmi";
+import { useEffect } from "react";
 import { POSITION_MANAGER_ADDRESS, POSITION_MANAGER_ABI } from "../config";
 
 interface Props {
   index: number;
   owner: `0x${string}`;
   isProtected: boolean;
+  onActive?: () => void;
 }
 
 const FEE_LABELS: Record<number, string> = {
@@ -92,7 +94,7 @@ function getDisplayPrices(tickLower: number, tickUpper: number, sym0: string, sy
   };
 }
 
-export function PositionCard({ index, owner, isProtected }: Props) {
+export function PositionCard({ index, owner, isProtected, onActive }: Props) {
   const { data: tokenId } = useReadContract({
     address: POSITION_MANAGER_ADDRESS,
     abi: POSITION_MANAGER_ABI,
@@ -142,6 +144,10 @@ export function PositionCard({ index, owner, isProtected }: Props) {
 
   const hasLiquidity = (liquidity as bigint) > 0n;
   if (!hasLiquidity) return null;
+
+  // Notify parent that this position is active
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => { onActive?.(); }, []);
   const feeLabel = FEE_LABELS[fee as number] ?? `${(fee as number) / 10000}% fee tier`;
 
   const sym0 = TOKEN_SYMBOLS[(token0Raw as string).toLowerCase()] ?? (token0Raw as string).slice(0, 6) + "...";

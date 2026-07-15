@@ -37,6 +37,41 @@ const TOKEN_DECIMALS: Record<string, number> = {
   DAI: 18, WBTC: 8,
 };
 
+// Uniswap v3 Factory — to get pool address
+const FACTORY_ADDRESS = "0x1F98431c8aD98523631AE4a59f267346ea31F984" as const;
+const FACTORY_ABI = [
+  {
+    name: "getPool",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "tokenA", type: "address" },
+      { name: "tokenB", type: "address" },
+      { name: "fee", type: "uint24" },
+    ],
+    outputs: [{ name: "pool", type: "address" }],
+  },
+] as const;
+
+// Uniswap v3 Pool — to get current tick
+const POOL_ABI = [
+  {
+    name: "slot0",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [
+      { name: "sqrtPriceX96", type: "uint160" },
+      { name: "tick", type: "int24" },
+      { name: "observationIndex", type: "uint16" },
+      { name: "observationCardinality", type: "uint16" },
+      { name: "observationCardinalityNext", type: "uint16" },
+      { name: "feeProtocol", type: "uint8" },
+      { name: "unlocked", type: "bool" },
+    ],
+  },
+] as const;
+
 function formatPrice(price: number): string {
   if (price >= 1000) return `$${price.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
   if (price >= 1) return `$${price.toFixed(2)}`;
@@ -48,22 +83,12 @@ function tickToPrice(tick: number, decimals0: number, decimals1: number): number
   return Math.pow(1.0001, tick) * Math.pow(10, decimals0 - decimals1);
 }
 
-function getDisplayPrices(
-  tickLower: number,
-  tickUpper: number,
-  sym0: string,
-  sym1: string
-): { lower: string; upper: string } {
+function getDisplayPrices(tickLower: number, tickUpper: number, sym0: string, sym1: string) {
   const dec0 = TOKEN_DECIMALS[sym0] ?? 18;
   const dec1 = TOKEN_DECIMALS[sym1] ?? 18;
-
-  // price = token1 per token0 in human units
-  const priceLower = tickToPrice(tickLower, dec0, dec1);
-  const priceUpper = tickToPrice(tickUpper, dec0, dec1);
-
   return {
-    lower: formatPrice(priceLower),
-    upper: formatPrice(priceUpper),
+    lower: formatPrice(tickToPrice(tickLower, dec0, dec1)),
+    upper: formatPrice(tickToPrice(tickUpper, dec0, dec1)),
   };
 }
 
@@ -83,7 +108,31 @@ export function PositionCard({ index, owner, isProtected }: Props) {
     query: { enabled: !!tokenId },
   });
 
-  if (!tokenId || !position) {
+  const [, , token0Raw, token1Raw, fee, tickLower, tickUpper, liquidity] =
+    position && tokenId
+      ? (position as unknown as [bigint, string, string, string, number, number, number, bigint, ...unknown[]])
+      : [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined];
+
+  // Get pool address from factory
+  const { data: poolAddress } = useReadContract({
+    address: FACTORY_ADDRESS,
+    abi: FACTORY_ABI,
+    functionName: "getPool",
+    args: token0Raw && token1Raw && fee !== undefined
+      ? [token0Raw as `0x${string}`, token1Raw as `0x${string}`, fee]
+      : undefined,
+    query: { enabled: !!token0Raw && !!token1Raw && fee !== undefined },
+  });
+
+  // Get current tick from pool
+  const { data: slot0 } = useReadContract({
+    address: poolAddress as `0x${string}`,
+    abi: POOL_ABI,
+    functionName: "slot0",
+    query: { enabled: !!poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000" },
+  });
+
+  if (!tokenId || !position || token0Raw === undefined) {
     return (
       <div className="position-card loading">
         <div className="loading-pulse" />
@@ -91,21 +140,23 @@ export function PositionCard({ index, owner, isProtected }: Props) {
     );
   }
 
-  const [, , token0, token1, fee, tickLower, tickUpper, liquidity] = position as unknown as [
-    bigint, string, string, string, number, number, number, bigint, ...unknown[]
-  ];
+  const hasLiquidity = (liquidity as bigint) > 0n;
+  const feeLabel = FEE_LABELS[fee as number] ?? `${(fee as number) / 10000}% fee tier`;
 
-  const hasLiquidity = liquidity > 0n;
-  const feeLabel = FEE_LABELS[fee] ?? `${fee / 10000}% fee tier`;
-
-  const sym0 = TOKEN_SYMBOLS[token0.toLowerCase()] ?? token0.slice(0, 6) + "...";
-  const sym1 = TOKEN_SYMBOLS[token1.toLowerCase()] ?? token1.slice(0, 6) + "...";
+  const sym0 = TOKEN_SYMBOLS[(token0Raw as string).toLowerCase()] ?? (token0Raw as string).slice(0, 6) + "...";
+  const sym1 = TOKEN_SYMBOLS[(token1Raw as string).toLowerCase()] ?? (token1Raw as string).slice(0, 6) + "...";
   const logo0 = TOKEN_LOGOS[sym0];
   const logo1 = TOKEN_LOGOS[sym1];
 
   const { lower: priceLower, upper: priceUpper } = getDisplayPrices(
-    tickLower, tickUpper, sym0, sym1
+    tickLower as number, tickUpper as number, sym0, sym1
   );
+
+  // Determine real in-range status using current tick from pool
+  const currentTick = slot0 ? Number((slot0 as readonly [bigint, number, ...unknown[]])[1]) : null;
+  const isInRange = currentTick !== null
+    ? currentTick >= (tickLower as number) && currentTick <= (tickUpper as number)
+    : hasLiquidity; // fallback to liquidity check if pool not loaded yet
 
   const uniswapUrl = `https://app.uniswap.org/positions/v3/ethereum/${tokenId}`;
 
@@ -148,8 +199,8 @@ export function PositionCard({ index, owner, isProtected }: Props) {
         </div>
         <div className="position-row">
           <span className="position-row-label">Status</span>
-          <span className={`position-row-value ${hasLiquidity ? "green" : "red"}`}>
-            {hasLiquidity ? "In Range" : "Out of Range"}
+          <span className={`position-row-value ${isInRange ? "green" : "red"}`}>
+            {isInRange ? "In Range" : "Out of Range"}
           </span>
         </div>
         <div className="position-row">
@@ -159,12 +210,7 @@ export function PositionCard({ index, owner, isProtected }: Props) {
       </div>
 
       <div className="position-footer">
-        <a
-          href={uniswapUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-view"
-        >
+        <a href={uniswapUrl} target="_blank" rel="noopener noreferrer" className="btn-view">
           View on Uniswap →
         </a>
       </div>

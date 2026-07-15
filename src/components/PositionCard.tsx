@@ -141,7 +141,7 @@ export function PositionCard({ index, owner, isProtected }: Props) {
   }
 
   const hasLiquidity = (liquidity as bigint) > 0n;
-  const feeLabel = FEE_LABELS[fee as number] ?? `${(fee as number) / 10000}% fee tier`;
+  if (!hasLiquidity) return null; = FEE_LABELS[fee as number] ?? `${(fee as number) / 10000}% fee tier`;
 
   const sym0 = TOKEN_SYMBOLS[(token0Raw as string).toLowerCase()] ?? (token0Raw as string).slice(0, 6) + "...";
   const sym1 = TOKEN_SYMBOLS[(token1Raw as string).toLowerCase()] ?? (token1Raw as string).slice(0, 6) + "...";

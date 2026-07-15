@@ -142,12 +142,14 @@ export function PositionCard({ index, owner, isProtected, onActive }: Props) {
     );
   }
 
-  const hasLiquidity = (liquidity as bigint) > 0n;
-  if (!hasLiquidity) return null;
+  const hasLiquidity = liquidity !== undefined ? (liquidity as bigint) > 0n : false;
 
-  // Notify parent that this position is active
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => { onActive?.(); }, []);
+  // Must be before any early return — Rules of Hooks
+  useEffect(() => {
+    if (hasLiquidity) onActive?.();
+  }, [hasLiquidity]);
+
+  if (!hasLiquidity) return null;
   const feeLabel = FEE_LABELS[fee as number] ?? `${(fee as number) / 10000}% fee tier`;
 
   const sym0 = TOKEN_SYMBOLS[(token0Raw as string).toLowerCase()] ?? (token0Raw as string).slice(0, 6) + "...";

@@ -216,7 +216,7 @@ export function Dashboard() {
       <div className="contract-info">
         Contract:{" "}
         <a
-          href={`https://sepolia.etherscan.io/address/${SENTINEL_OPERATOR_ADDRESS}`}
+          href={`https://etherscan.io/address/${SENTINEL_OPERATOR_ADDRESS}`}
           target="_blank"
           rel="noopener noreferrer"
         >

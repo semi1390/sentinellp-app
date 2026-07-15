@@ -34,45 +34,25 @@ const TOKEN_LOGOS: Record<string, string> = {
 };
 
 const TOKEN_DECIMALS: Record<string, number> = {
-  WETH: 18, ETH: 18,
-  USDC: 6, USDT: 6,
-  DAI: 18, WBTC: 8,
+  WETH: 18, ETH: 18, USDC: 6, USDT: 6, DAI: 18, WBTC: 8,
 };
 
-// Uniswap v3 Factory — to get pool address
 const FACTORY_ADDRESS = "0x1F98431c8aD98523631AE4a59f267346ea31F984" as const;
-const FACTORY_ABI = [
-  {
-    name: "getPool",
-    type: "function",
-    stateMutability: "view",
-    inputs: [
-      { name: "tokenA", type: "address" },
-      { name: "tokenB", type: "address" },
-      { name: "fee", type: "uint24" },
-    ],
-    outputs: [{ name: "pool", type: "address" }],
-  },
-] as const;
+const FACTORY_ABI = [{
+  name: "getPool", type: "function", stateMutability: "view",
+  inputs: [{ name: "tokenA", type: "address" }, { name: "tokenB", type: "address" }, { name: "fee", type: "uint24" }],
+  outputs: [{ name: "pool", type: "address" }],
+}] as const;
 
-// Uniswap v3 Pool — to get current tick
-const POOL_ABI = [
-  {
-    name: "slot0",
-    type: "function",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [
-      { name: "sqrtPriceX96", type: "uint160" },
-      { name: "tick", type: "int24" },
-      { name: "observationIndex", type: "uint16" },
-      { name: "observationCardinality", type: "uint16" },
-      { name: "observationCardinalityNext", type: "uint16" },
-      { name: "feeProtocol", type: "uint8" },
-      { name: "unlocked", type: "bool" },
-    ],
-  },
-] as const;
+const POOL_ABI = [{
+  name: "slot0", type: "function", stateMutability: "view", inputs: [],
+  outputs: [
+    { name: "sqrtPriceX96", type: "uint160" }, { name: "tick", type: "int24" },
+    { name: "observationIndex", type: "uint16" }, { name: "observationCardinality", type: "uint16" },
+    { name: "observationCardinalityNext", type: "uint16" }, { name: "feeProtocol", type: "uint8" },
+    { name: "unlocked", type: "bool" },
+  ],
+}] as const;
 
 function formatPrice(price: number): string {
   if (price >= 1000) return `$${price.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
@@ -95,6 +75,8 @@ function getDisplayPrices(tickLower: number, tickUpper: number, sym0: string, sy
 }
 
 export function PositionCard({ index, owner, isProtected, onActive }: Props) {
+  // ---- ALL HOOKS FIRST — no early returns before this section ----
+
   const { data: tokenId } = useReadContract({
     address: POSITION_MANAGER_ADDRESS,
     abi: POSITION_MANAGER_ABI,
@@ -110,12 +92,17 @@ export function PositionCard({ index, owner, isProtected, onActive }: Props) {
     query: { enabled: !!tokenId },
   });
 
-  const [, , token0Raw, token1Raw, fee, tickLower, tickUpper, liquidity] =
-    position && tokenId
-      ? (position as unknown as [bigint, string, string, string, number, number, number, bigint, ...unknown[]])
-      : [undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined];
+  const posData = position && tokenId
+    ? (position as unknown as [bigint, string, string, string, number, number, number, bigint, ...unknown[]])
+    : null;
 
-  // Get pool address from factory
+  const token0Raw = posData?.[2];
+  const token1Raw = posData?.[3];
+  const fee = posData?.[4];
+  const tickLower = posData?.[5];
+  const tickUpper = posData?.[6];
+  const liquidity = posData?.[7];
+
   const { data: poolAddress } = useReadContract({
     address: FACTORY_ADDRESS,
     abi: FACTORY_ABI,
@@ -126,7 +113,6 @@ export function PositionCard({ index, owner, isProtected, onActive }: Props) {
     query: { enabled: !!token0Raw && !!token1Raw && fee !== undefined },
   });
 
-  // Get current tick from pool
   const { data: slot0 } = useReadContract({
     address: poolAddress as `0x${string}`,
     abi: POOL_ABI,
@@ -134,7 +120,16 @@ export function PositionCard({ index, owner, isProtected, onActive }: Props) {
     query: { enabled: !!poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000" },
   });
 
-  if (!tokenId || !position || token0Raw === undefined) {
+  const hasLiquidity = liquidity !== undefined ? (liquidity as bigint) > 0n : undefined;
+
+  // Notify parent when this position is confirmed active
+  useEffect(() => {
+    if (hasLiquidity === true) onActive?.();
+  }, [hasLiquidity]);
+
+  // ---- EARLY RETURNS after all hooks ----
+
+  if (!tokenId || !posData) {
     return (
       <div className="position-card loading">
         <div className="loading-pulse" />
@@ -142,16 +137,11 @@ export function PositionCard({ index, owner, isProtected, onActive }: Props) {
     );
   }
 
-  const hasLiquidity = liquidity !== undefined ? (liquidity as bigint) > 0n : false;
+  if (hasLiquidity === false) return null;
 
-  // Must be before any early return — Rules of Hooks
-  useEffect(() => {
-    if (hasLiquidity) onActive?.();
-  }, [hasLiquidity]);
+  // ---- RENDER ----
 
-  if (!hasLiquidity) return null;
   const feeLabel = FEE_LABELS[fee as number] ?? `${(fee as number) / 10000}% fee tier`;
-
   const sym0 = TOKEN_SYMBOLS[(token0Raw as string).toLowerCase()] ?? (token0Raw as string).slice(0, 6) + "...";
   const sym1 = TOKEN_SYMBOLS[(token1Raw as string).toLowerCase()] ?? (token1Raw as string).slice(0, 6) + "...";
   const logo0 = TOKEN_LOGOS[sym0];
@@ -161,11 +151,10 @@ export function PositionCard({ index, owner, isProtected, onActive }: Props) {
     tickLower as number, tickUpper as number, sym0, sym1
   );
 
-  // Determine real in-range status using current tick from pool
   const currentTick = slot0 ? Number((slot0 as readonly [bigint, number, ...unknown[]])[1]) : null;
   const isInRange = currentTick !== null
     ? currentTick >= (tickLower as number) && currentTick <= (tickUpper as number)
-    : hasLiquidity; // fallback to liquidity check if pool not loaded yet
+    : true;
 
   const uniswapUrl = `https://app.uniswap.org/positions/v3/ethereum/${tokenId}`;
 
@@ -202,9 +191,7 @@ export function PositionCard({ index, owner, isProtected, onActive }: Props) {
         </div>
         <div className="position-row">
           <span className="position-row-label">Liquidity</span>
-          <span className={`position-row-value ${hasLiquidity ? "green" : ""}`}>
-            {hasLiquidity ? "Active" : "Empty"}
-          </span>
+          <span className="position-row-value green">Active</span>
         </div>
         <div className="position-row">
           <span className="position-row-label">Status</span>

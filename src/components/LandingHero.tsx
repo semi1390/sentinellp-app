@@ -154,7 +154,7 @@ export function LandingHero() {
         <FadeIn>
           <div className="stats-bar">
             {[
-              { value: "6", label: "Workflow steps per rebalance" },
+              { value: "3", label: "Workflow steps per rebalance" },
               { value: "$0", label: "Gas from your wallet" },
               { value: "24/7", label: "Autonomous monitoring" },
               { value: "0.05%", label: "Fee per rebalance" },
@@ -181,8 +181,8 @@ export function LandingHero() {
             { num: "01", title: "Connect & Register", desc: "Connect your wallet and register with SentinelLP. Free — no deposit required. Takes 2 minutes.", detail: "One transaction. No upfront cost." },
             { num: "02", title: "Approve as Operator", desc: "Grant SentinelLP permission to manage your Uniswap v3 positions. Your tokens always return to your wallet.", detail: "One transaction. Revocable anytime." },
             { num: "03", title: "Agent Monitors 24/7", desc: "Our AI checks your positions every 5 minutes. When one drifts out of range, it reasons about the economics before acting.", detail: "Chainlink prices feed real economics" },
-            { num: "04", title: "KeeperHub Executes", desc: "A 5-step workflow fires through KeeperHub — gas sponsored, MEV protected, with full audit trail.", detail: "decreaseLiquidity → collect → approve → mint" },
-            { num: "05", title: "Tokens Return to You", desc: "Your rebalanced position opens at the optimal range. All tokens go directly back to your wallet.", detail: "We never hold your funds" },
+            { num: "04", title: "KeeperHub Executes", desc: "A 3-step workflow fires through KeeperHub — gas sponsored, MEV protected, with full audit trail.", detail: "decreaseLiquidity → collect → mint" },
+            { num: "05", title: "Position Rebalanced", desc: "Your rebalanced position opens at the optimal range. The new position NFT goes directly to your wallet.", detail: "Full audit trail on KeeperHub" },
           ].map((step, i) => (
             <FadeIn key={i} delay={i * 80}>
               <div className="step-card">
@@ -205,7 +205,7 @@ export function LandingHero() {
         </FadeIn>
         <div className="features-grid">
           {[
-            { tag: "Execution", title: "KeeperHub Workflows", desc: "Every rebalance is a 5-step workflow submitted to KeeperHub's execution layer. Gas is sponsored, transactions are MEV-protected via private mempool, and every step is logged with a transaction hash.", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+            { tag: "Execution", title: "KeeperHub Workflows", desc: "Every rebalance is a 3-step workflow submitted to KeeperHub's execution layer. Gas is sponsored, transactions are MEV-protected via private mempool, and every step is logged with a transaction hash.", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
             { tag: "AI Reasoning", title: "AI Decision Engine", desc: "Our AI analyzes your position's health, current price, gas costs, and daily fee loss — then decides whether to HOLD, WAIT, or REBALANCE. No hardcoded rules. Real economic reasoning.", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#6366f1" strokeWidth="2"/><path d="M12 6v6l4 2" stroke="#6366f1" strokeWidth="2" strokeLinecap="round"/></svg> },
             { tag: "Price Feeds", title: "Chainlink Oracles", desc: "Real-time ETH/USD and USDC/USD prices from Chainlink. The agent uses live prices to calculate accurate position values, gas costs in USD, and daily fee loss estimates.", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 3h18v18H3z" stroke="#6366f1" strokeWidth="2" strokeLinejoin="round"/><path d="M3 9h18M9 21V9" stroke="#6366f1" strokeWidth="2"/></svg> },
             { tag: "Security", title: "Non-Custodial by Design", desc: "SentinelLP never holds your funds. The operator contract uses Uniswap's native setApprovalForAll — your tokens move directly from the pool back to your wallet. Revoke access anytime.", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg> },
@@ -233,7 +233,7 @@ export function LandingHero() {
         <FadeIn delay={80}>
           <div className="proof-grid">
             {[
-              { value: "5", label: "Onchain transactions", sub: "Per full rebalance cycle" },
+              { value: "3", label: "Onchain transactions", sub: "Per full rebalance cycle" },
               { value: "856k", label: "Gas units per rebalance", sub: "Fully sponsored by KeeperHub" },
               { value: "5 min", label: "Monitoring interval", sub: "Configurable down to 1 min" },
               { value: "< 60s", label: "Time to rebalance", sub: "From detection to confirmation" },
